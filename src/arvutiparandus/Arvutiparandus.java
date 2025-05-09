@@ -2,6 +2,8 @@ package arvutiparandus;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -85,7 +87,7 @@ public class Arvutiparandus {
         List<Arvuti> arvutid = new ArrayList<>();
         boolean isUrl = sisend.startsWith("http://") || sisend.startsWith("https://");
 
-        try (InputStream in = isUrl ? getInputStreamFromUrl(sisend) : new FileInputStream(sisend);
+        try (InputStream in = isUrl ? new URI(sisend).toURL().openStream() : new FileInputStream(sisend);
              BufferedReader bf = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             String rida = bf.readLine();
             while (rida != null) {
@@ -97,19 +99,11 @@ public class Arvutiparandus {
                 }
                 rida = bf.readLine();
             }
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
         }
         return arvutid;
     }
-
-    // InputStream - loominne urlStringist Java 21-s
-    private static InputStream getInputStreamFromUrl(String urlString) throws IOException, InterruptedException {
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(urlString))
-                .build();
-        return client.send(request, HttpResponse.BodyHandlers.ofInputStream()).body();
-    }
-
     public static void registreeritood(BufferedReader bf, List<Arvuti> parandamataArvutid) throws IOException {
         while (true) {
             System.out.println("Sisesta töö kirjeldus: ");
